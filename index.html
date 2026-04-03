@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Bricks</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Press+Start+2P&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #13233b;
+            --ink-soft: #35506d;
+            --cream: #f5ecd8;
+            --sand: #dbc8a6;
+            --orange: #ff8a3d;
+            --tomato: #ef5b43;
+            --gold: #ffc94a;
+            --mint: #8dd7b1;
+            --shadow: rgba(7, 17, 31, 0.28);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, rgba(255, 201, 74, 0.26), transparent 28%),
+                radial-gradient(circle at 85% 12%, rgba(141, 215, 177, 0.22), transparent 24%),
+                linear-gradient(135deg, #f3dfbc 0%, #efb56d 48%, #e77a43 100%);
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--ink);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 12px;
+            padding: 20px;
+        }
+
+        body > h1 {
+            position: relative;
+            z-index: 1;
+            display: none;
+            font-family: 'Bungee', cursive;
+            font-size: clamp(1.8rem, 5vw, 3.2rem);
+            letter-spacing: 0.08em;
+            color: var(--ink);
+            text-transform: uppercase;
+            text-shadow: 4px 4px 0 rgba(255,255,255,0.28);
+            line-height: 1;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background:
+                linear-gradient(rgba(255,255,255,0.12), rgba(255,255,255,0.04)),
+                repeating-linear-gradient(90deg, rgba(19,35,59,0.05) 0 1px, transparent 1px 22px),
+                repeating-linear-gradient(0deg, rgba(19,35,59,0.04) 0 1px, transparent 1px 22px);
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: auto -10% -14% auto;
+            width: min(56vw, 760px);
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(19,35,59,0.18) 0%, rgba(19,35,59,0.03) 58%, transparent 74%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        #canvas-wrap {
+            position: relative;
+            z-index: 1;
+            width: min(92vw, 900px);
+            padding: 18px;
+            border-radius: 34px;
+            background:
+                linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0.16)),
+                linear-gradient(145deg, rgba(19,35,59,0.14), rgba(19,35,59,0.05));
+            box-shadow:
+                0 24px 70px rgba(116, 46, 23, 0.28),
+                inset 0 1px 0 rgba(255,255,255,0.5);
+            backdrop-filter: blur(8px);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 24px;
+            border: 3px solid rgba(19, 35, 59, 0.18);
+            box-shadow:
+                0 18px 45px rgba(7, 17, 31, 0.22),
+                inset 0 0 0 1px rgba(255,255,255,0.18);
+            image-rendering: pixelated;
+        }
+
+        #ui {
+            position: absolute;
+            top: 18px;
+            left: 18px;
+            right: 18px;
+            padding: 12px 14px;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            pointer-events: none;
+            z-index: 10;
+            background: rgba(245, 236, 216, 0.78);
+            border: 1px solid rgba(19, 35, 59, 0.14);
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(7, 17, 31, 0.12);
+            backdrop-filter: blur(10px);
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 0;
+        }
+
+        .hud-label {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 0.18em;
+            color: var(--ink-soft);
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .hud-value {
+            font-family: 'Bungee', cursive;
+            font-size: clamp(0.95rem, 1.8vw, 1.3rem);
+            color: var(--ink);
+            line-height: 1.1;
+        }
+
+        #ui .hud-item:nth-child(1) .hud-value { color: var(--tomato); }
+        #ui .hud-item:nth-child(2) .hud-value { color: var(--orange); }
+        #ui .hud-item:nth-child(3) .hud-value { color: #2e5b86; }
+        #ui .hud-item:nth-child(4) .hud-value { color: #2f7d67; }
+
+        #menu, #pause, #gameover, #levelcomplete {
+            position: absolute;
+            inset: 18px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 20;
+            background:
+                radial-gradient(circle at top, rgba(255, 201, 74, 0.26), transparent 36%),
+                linear-gradient(180deg, rgba(245, 236, 216, 0.96), rgba(236, 217, 183, 0.92));
+            border-radius: 24px;
+            border: 2px solid rgba(19, 35, 59, 0.14);
+            backdrop-filter: blur(12px);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);
+            text-align: center;
+            padding: 48px 28px 72px;
+        }
+
+        #menu::before, #pause::before, #gameover::before, #levelcomplete::before,
+        #menu::after,  #pause::after,  #gameover::after,  #levelcomplete::after {
+            content: '';
+            position: absolute;
+            width: 58px;
+            height: 58px;
+            border-color: rgba(19, 35, 59, 0.26);
+            border-style: solid;
+            pointer-events: none;
+        }
+        #menu::before, #pause::before, #gameover::before, #levelcomplete::before {
+            top: 18px;
+            left: 18px;
+            border-width: 2px 0 0 2px;
+        }
+        #menu::after, #pause::after, #gameover::after, #levelcomplete::after {
+            right: 18px;
+            bottom: 18px;
+            border-width: 0 2px 2px 0;
+        }
+
+        .overlay-title {
+            font-family: 'Bungee', cursive;
+            font-size: clamp(2.5rem, 8vw, 4.8rem);
+            color: var(--ink);
+            letter-spacing: 0.08em;
+            line-height: 0.95;
+            text-shadow: 4px 4px 0 rgba(255,255,255,0.34);
+            margin-bottom: 12px;
+        }
+
+        @keyframes flicker {
+            0%,91%,93%,95%,100% { opacity: 1; }
+            92%,94% { opacity: 0.82; }
+        }
+
+        .overlay-sub {
+            font-size: clamp(0.98rem, 2vw, 1.18rem);
+            color: var(--ink-soft);
+            letter-spacing: 0.18em;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        button {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.92rem;
+            letter-spacing: 0.12em;
+            padding: 14px 26px;
+            margin: 7px;
+            background: linear-gradient(180deg, var(--ink), #0b1728);
+            color: var(--cream);
+            border: 0;
+            border-radius: 999px;
+            cursor: pointer;
+            box-shadow:
+                0 10px 20px rgba(7, 17, 31, 0.18),
+                inset 0 -3px 0 rgba(0,0,0,0.22);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+            position: relative;
+            overflow: hidden;
+            font-weight: 700;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        button:hover {
+            background: linear-gradient(180deg, #1c3557, #10233c);
+            box-shadow:
+                0 14px 28px rgba(7, 17, 31, 0.24),
+                inset 0 -3px 0 rgba(0,0,0,0.28);
+            transform: translateY(-2px);
+        }
+
+        button:active { transform: translateY(1px); }
+
+        button.btn-alt {
+            background: linear-gradient(180deg, var(--tomato), #d94935);
+            color: #fff6ef;
+        }
+        button.btn-alt:hover {
+            background: linear-gradient(180deg, #ff7354, #dc4a38);
+        }
+
+        .hs-block {
+            margin-top: 26px;
+            text-align: center;
+            border: 1px solid rgba(19, 35, 59, 0.12);
+            padding: 20px 24px;
+            background: rgba(255,255,255,0.42);
+            min-width: min(100%, 360px);
+            border-radius: 22px;
+            box-shadow: 0 16px 34px rgba(7, 17, 31, 0.1);
+        }
+
+        .hs-block h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.84rem;
+            letter-spacing: 0.18em;
+            color: var(--ink-soft);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+
+        #highscores {
+            font-family: 'Bungee', cursive;
+            font-size: 0.78rem;
+            line-height: 2.1;
+            color: var(--ink);
+        }
+
+        #highscores div { border-bottom: 1px solid rgba(19, 35, 59, 0.08); padding: 2px 0; }
+        #highscores div:last-child { border-bottom: none; }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 24px;
+            max-width: min(88%, 700px);
+            font-size: 0.88rem;
+            color: rgba(19, 35, 59, 0.68);
+            letter-spacing: 0.08em;
+            line-height: 1.8;
+            text-align: center;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+        }
+
+        .pu-info {
+            margin-top: 16px;
+            font-size: 0.98rem;
+            color: var(--ink);
+            letter-spacing: 0.08em;
+            text-align: center;
+            font-weight: 700;
+            text-transform: uppercase;
+            line-height: 1.8;
+        }
+        .pu-info span { color: var(--tomato); }
+
+        .panel-title {
+            font-family: 'Bungee', cursive;
+            font-size: clamp(2rem, 5vw, 3rem);
+            letter-spacing: 0.08em;
+            margin-bottom: 16px;
+        }
+
+        .panel-title.yellow { color: #2e5b86; }
+        .panel-title.red    { color: var(--tomato); }
+        .panel-title.green  { color: #2f7d67; }
+
+        .panel-body {
+            font-size: 1.05rem;
+            color: var(--ink-soft);
+            letter-spacing: 0.08em;
+            margin-bottom: 28px;
+            text-align: center;
+            line-height: 1.8;
+            font-weight: 600;
+        }
+
+        .panel-body strong {
+            color: var(--ink);
+            font-family: 'Bungee', cursive;
+            font-size: 1rem;
+        }
+
+        .powerup-text {
+            position: absolute;
+            top: 92px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Bungee', cursive;
+            font-size: 1rem;
+            letter-spacing: 0.12em;
+            text-shadow: 0 4px 14px rgba(255,255,255,0.3);
+            animation: powerupAnim 2.2s forwards;
+            pointer-events: none;
+            z-index: 30;
+            white-space: nowrap;
+        }
+
+        @keyframes powerupAnim {
+            0%   { opacity: 1;   transform: translateX(-50%) translateY(0)   scale(1);   }
+            60%  { opacity: 1;   transform: translateX(-50%) translateY(-14px) scale(1.08); }
+            100% { opacity: 0;   transform: translateX(-50%) translateY(-28px) scale(0.9); }
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 10px;
+            }
+
+            #canvas-wrap {
+                width: 100%;
+                padding: 10px;
+                border-radius: 22px;
+            }
+
+            #ui {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                flex-wrap: wrap;
+            }
+
+            #menu, #pause, #gameover, #levelcomplete {
+                inset: 10px;
+                padding: 34px 20px 70px;
+            }
+
+            .overlay-sub,
+            .pu-info,
+            .controls-hint,
+            .panel-body {
+                letter-spacing: 0.04em;
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                overflow-y: auto;
+            }
+
+            #ui {
+                gap: 10px 16px;
+            }
+
+            .hud-item {
+                width: calc(50% - 8px);
+            }
+
+            .controls-hint {
+                font-size: 0.74rem;
+                bottom: 16px;
+            }
+
+            .pu-info {
+                font-size: 0.82rem;
+            }
+
+            .powerup-text {
+                font-size: 0.84rem;
+                top: 86px;
+            }
+        }
+    </style>
+</head>
+<body>
+<h1>The Bricks</h1>
+<div id="canvas-wrap">
+    <canvas id="game" width="800" height="600"></canvas>
+
+    <div id="ui">
+        <div class="hud-item">
+            <span class="hud-label">Točke</span>
+            <span class="hud-value" id="score">0</span>
+        </div>
+        <div class="hud-item">
+            <span class="hud-label">Čas</span>
+            <span class="hud-value" id="time">00:00</span>
+        </div>
+        <div class="hud-item">
+            <span class="hud-label">Nivo</span>
+            <span class="hud-value" id="level">1</span>
+        </div>
+        <div class="hud-item">
+            <span class="hud-label">Življenja</span>
+            <span class="hud-value" id="lives">3</span>
+        </div>
+    </div>
+
+    <!-- MENU -->
+    <div id="menu">
+        <div class="overlay-title">THE BRICKS</div>
+        <div class="overlay-sub">Klasična 'The Bricks' igra z bonusi</div>
+        <button onclick="startGame()">▶ &nbsp;ZAČNI IGRO</button>
+        <div class="hs-block">
+            <h2>🏆 &nbsp;NAJBOLJŠI REZULTATI</h2>
+            <div id="highscores"></div>
+        </div>
+        <div class="pu-info" style="margin-top:20px;">
+            BONUSI: ❤️ +življenje &nbsp;🔺 večja plošča &nbsp;⚪ dodatne-žoge<br>
+            <span>+ ŽOGA SE POSPEŠUJE (0.1 na frame)</span>
+        </div>
+        <div class="controls-hint">
+            ← → ali A D = premikanje plošče &nbsp;|&nbsp; SPACE = izstrelitev &nbsp;|&nbsp; P = pavza
+        </div>
+    </div>
+
+    <!-- PAUZA -->
+    <div id="pause">
+        <div class="panel-title yellow">PAUZA</div>
+        <div class="panel-body">Igra je ustavljena</div>
+        <button onclick="togglePause()">▶ &nbsp;NADALJUJ</button>
+    </div>
+
+    <!-- KONEC IGRE -->
+    <div id="gameover">
+        <div class="panel-title red">GAME OVER</div>
+        <div class="panel-body" id="finalscore"></div>
+        <button onclick="restartGame()">↺ &nbsp;ZNOVA</button>
+        <button class="btn-alt" onclick="showMenu()">↩ &nbsp;MENI</button>
+    </div>
+
+    <!-- NIVO DOKONČAN -->
+    <div id="levelcomplete">
+        <div class="panel-title green">NIVO DOKONČAN!</div>
+        <div class="panel-body" id="levelscore"></div>
+        <button onclick="nextLevel()">▶ &nbsp;NASLEDNJI NIVO</button>
+    </div>
+</div>
+
+    <script>
+        // ====================== THE BRICKS + POWER-UPI + AKCELERACIJA ŽOGE ======================
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        const ui = document.getElementById('ui');
+        const pageTitle = document.querySelector('body > h1');
+        
+        const SCREEN_W = 800;
+        const SCREEN_H = 600;
+        const BRICK_SIDE_MARGIN = 5;
+        const BRICK_MARGIN_TOP = 18;
+        
+        // Konstante
+        let paddleW = 100;
+        let paddleH = 15;
+        let ballR = 10;
+        let brickW = 70;
+        let brickH = 25;
+        
+        // Igra spremenljivke
+        let paddleX = SCREEN_W / 2 - paddleW / 2;
+        let balls = [];
+        let bricks = [];
+        let powerUps = [];
+        
+        let score = 0;
+        let lives = 3;
+        let level = 1;
+        let playTime = 0;
+        let lastTime = 0;
+        let gameRunning = false;
+        let paused = false;
+        
+        let paddleWidthTimer = 0;
+        let highScores = [];
+        
+        // Tipke
+        let keys = {};
+        
+        // POWER-UP tipi
+        const POWERUP_TYPES = [
+            { type: 'life', color: '#00ff00', symbol: '❤️', name: 'ŽIVLJENJE' },
+            { type: 'big',  color: '#0066ff', symbol: '🔺', name: 'VELIKA PLOŠČA' },
+            { type: 'multi',color: '#ff00ff', symbol: '⚪', name: 'DODATNE ŽOGE' }
+        ];
+        
+        function createBall(x, y, dx = 0, dy = 0, attached = false) {
+            return { x, y, dx, dy, r: ballR, attached };
+        }
+        
+        function createBrick(x, y) {
+            const hasPowerUp = Math.random() < 0.09;
+            let powerUp = null;
+            if (hasPowerUp) {
+                powerUp = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)].type;
+            }
+            return {
+                x: x,
+                y: y,
+                w: brickW,
+                h: brickH,
+                alive: true,
+                powerUp: powerUp,
+                points: powerUp ? 50 : (30 + Math.floor(Math.random() * 20))
+            };
+        }
+        
+        function createLevel(lvl) {
+            bricks = [];
+            const rows = Math.min(5 + lvl, 8);
+            const cols = 10;
+            const startY = getBrickStartY();
+            const spacingX = cols > 1
+                ? (SCREEN_W - (BRICK_SIDE_MARGIN * 2) - brickW) / (cols - 1)
+                : 0;
+            const spacingY = brickH + 8;
+            
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const x = BRICK_SIDE_MARGIN + c * spacingX;
+                    const y = startY + r * spacingY;
+                    bricks.push(createBrick(x, y));
+                }
+            }
+        }
+        
+        function loadHighScores() {
+            const saved = localStorage.getItem('theBricksHighScores');
+            if (saved) highScores = JSON.parse(saved);
+            else highScores = [];
+            updateHighscoreUI();
+        }
+        
+        function saveHighScore() {
+            highScores.push(score);
+            highScores.sort((a,b) => b - a);
+            highScores = highScores.slice(0, 5);
+            localStorage.setItem('theBricksHighScores', JSON.stringify(highScores));
+            updateHighscoreUI();
+        }
+        
+        function updateHighscoreUI() {
+            const div = document.getElementById('highscores');
+            let html = '';
+            highScores.forEach((s, i) => {
+                html += `<div>${i+1}. ${s} točk</div>`;
+            });
+            if (highScores.length === 0) html = '<div style="color:#2a3a5a">Še ni rezultatov</div>';
+            div.innerHTML = html;
+        }
+        
+        function resetBalls() {
+            balls = [createBall(paddleX + paddleW / 2, SCREEN_H - 80, 0, 0, true)];
+        }
+        
+        function launchBall() {
+            for (let ball of balls) {
+                if (ball.attached) {
+                    ball.attached = false;
+                    const offset = (ball.x - (paddleX + paddleW / 2)) / (paddleW / 2);
+                    ball.dx = offset * 6;
+                    ball.dy = -(5.5 + level * 0.7);
+                    return;
+                }
+            }
+        }
+        
+        function spawnExtraBalls(count) {
+            const centerX = paddleX + paddleW / 2;
+            for (let i = 0; i < count; i++) {
+                const angleOffset = (i - (count - 1) / 2) * 0.4;
+                const speed = 6.2;
+                const dx = Math.sin(angleOffset) * speed;
+                const dy = -speed;
+                balls.push(createBall(centerX + (i * 18 - 18), SCREEN_H - 110, dx, dy, false));
+            }
+            showPowerupText('DODATNE ŽOGE!', '#f0f');
+        }
+        
+        function activatePowerUp(type) {
+            const pu = POWERUP_TYPES.find(p => p.type === type);
+            if (!pu) return;
+            
+            showPowerupText(pu.name, pu.color);
+            
+            if (type === 'life') {
+                lives = Math.min(lives + 1, 5);
+                document.getElementById('lives').textContent = lives;
+            } 
+            else if (type === 'big') {
+                paddleW = 160;
+                paddleWidthTimer = 12000;
+            } 
+            else if (type === 'multi') {
+                spawnExtraBalls(2);
+            }
+        }
+        
+        function showPowerupText(text, color) {
+            const existing = document.querySelector('.powerup-text');
+            if (existing) existing.remove();
+            
+            const el = document.createElement('div');
+            el.className = 'powerup-text';
+            el.style.color = color;
+            el.textContent = text;
+            document.getElementById('canvas-wrap').appendChild(el);
+            
+            setTimeout(() => el.remove(), 2200);
+        }
+
+        function getUiBounceLine() {
+            const canvasRect = canvas.getBoundingClientRect();
+            const uiRect = ui.getBoundingClientRect();
+
+            if (!canvasRect.height) return 0;
+
+            const uiBottomInsideCanvas = Math.max(0, uiRect.bottom - canvasRect.top);
+            return (uiBottomInsideCanvas / canvasRect.height) * SCREEN_H;
+        }
+
+        function getBrickStartY() {
+            return getUiBounceLine() + BRICK_MARGIN_TOP;
+        }
+        
+        function update(delta) {
+            if (!gameRunning || paused) return;
+            
+            playTime += delta;
+            
+            // loputa
+            const speed = 10;
+            if (keys['ArrowLeft'] || keys['a'] || keys['A']) paddleX -= speed;
+            if (keys['ArrowRight'] || keys['d'] || keys['D']) paddleX += speed;
+            
+            if (paddleX < 0) paddleX = 0;
+            if (paddleX + paddleW > SCREEN_W) paddleX = SCREEN_W - paddleW;
+            
+            // BIG paddle timer
+            if (paddleWidthTimer > 0) {
+                paddleWidthTimer -= delta;
+                if (paddleWidthTimer <= 0) {
+                    paddleW = 100;
+                }
+            }
+
+            const topBounceLine = getUiBounceLine();
+            
+            // ŽOGE
+			const acceleration=0.006
+            for (let i = balls.length - 1; i >= 0; i--) {
+                const ball = balls[i];
+                
+                if (ball.attached) {
+                    ball.x = paddleX + paddleW / 2;
+                    ball.y = SCREEN_H - 80;
+                } else {
+                    ball.x += ball.dx;
+                    ball.y += ball.dy;
+                    
+                    // odbiti od sten
+                    if (ball.x - ball.r < 0 || ball.x + ball.r > SCREEN_W) ball.dx = -ball.dx;
+                    if (ball.y - ball.r < topBounceLine) {
+                        ball.y = topBounceLine + ball.r;
+                        ball.dy = Math.abs(ball.dy);
+                    }
+                    
+                    // odbiti od lopute
+                    if (ball.dy > 0 &&
+                        ball.y + ball.r > SCREEN_H - 80 &&
+                        ball.y + ball.r < SCREEN_H - 80 + paddleH + 12 &&
+                        ball.x > paddleX && ball.x < paddleX + paddleW) {
+                        
+                        ball.dy = -ball.dy * 0.98;
+                        const offset = (ball.x - (paddleX + paddleW / 2)) / (paddleW / 2);
+                        ball.dx = offset * 6.8;
+                    }
+                    
+                    // padec dol
+                    if (ball.y > SCREEN_H + 50) {
+                        balls.splice(i, 1);
+                        continue;
+                    }
+                    
+                    // kolizija z opekami
+                    for (let j = bricks.length - 1; j >= 0; j--) {
+                        const b = bricks[j];
+                        if (!b.alive) continue;
+                        
+                        if (ball.x + ball.r > b.x && ball.x - ball.r < b.x + b.w &&
+                            ball.y + ball.r > b.y && ball.y - ball.r < b.y + b.h) {
+                            
+                            b.alive = false;
+                            score += b.points;
+                            document.getElementById('score').textContent = score;
+                            
+                            // odbiti žogo
+                            ball.dy = -ball.dy;
+                            
+                            // POWER-UP drop
+                            if (b.powerUp) {
+                                powerUps.push({
+                                    x: b.x + b.w / 2,
+                                    y: b.y + b.h / 2,
+                                    type: b.powerUp,
+                                    dy: 3.2,
+                                    size: 26
+                                });
+                            }
+                            
+                            break;
+                        }
+                    }
+                    
+                    // === AKCELERACIJA ŽOGE (0.1 na frame) ===
+                    const currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+                    if (currentSpeed > 0) {
+                        const newSpeed = currentSpeed + acceleration;
+                        const factor = newSpeed / currentSpeed;
+                        ball.dx *= factor;
+                        ball.dy *= factor;
+                    }
+                }
+            }
+            
+            // če ni več žog → izgubi življenje
+            if (balls.length === 0) {
+                lives--;
+                document.getElementById('lives').textContent = lives;
+                if (lives <= 0) {
+                    gameOver();
+                } else {
+                    resetBalls();
+                }
+            }
+            
+            // POWER-UPI padajo
+            for (let i = powerUps.length - 1; i >= 0; i--) {
+                const p = powerUps[i];
+                p.y += p.dy;
+                
+                if (p.y > SCREEN_H + 40) {
+                    powerUps.splice(i, 1);
+                    continue;
+                }
+                
+                // ulov z loputo
+                if (p.y + p.size / 2 > SCREEN_H - 80 &&
+                    p.y - p.size / 2 < SCREEN_H - 80 + paddleH &&
+                    p.x > paddleX && p.x < paddleX + paddleW) {
+                    
+                    activatePowerUp(p.type);
+                    powerUps.splice(i, 1);
+                }
+            }
+            
+            // preveri konec nivoja
+            const aliveBricks = bricks.filter(b => b.alive);
+            if (aliveBricks.length === 0) {
+                levelComplete();
+            }
+            
+            // UI čas
+            const totalSec = Math.floor(playTime / 1000);
+            const min = String(Math.floor(totalSec / 60)).padStart(2, '0');
+            const sec = String(totalSec % 60).padStart(2, '0');
+            document.getElementById('time').textContent = `${min}:${sec}`;
+            document.getElementById('level').textContent = level;
+        }
+        
+        function draw() {
+            // background
+            ctx.fillStyle = '#03040a';
+            ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+
+            // subtle grid
+            ctx.strokeStyle = 'rgba(0,245,255,0.04)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < SCREEN_W; x += 40) {
+                ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x, SCREEN_H); ctx.stroke();
+            }
+            for (let y = 0; y < SCREEN_H; y += 40) {
+                ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(SCREEN_W, y); ctx.stroke();
+            }
+
+            // bottom floor line
+            ctx.strokeStyle = 'rgba(0,245,255,0.12)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, SCREEN_H - 100);
+            ctx.lineTo(SCREEN_W, SCREEN_H - 100);
+            ctx.stroke();
+
+            // ── PADDLE ──
+            const pGrad = ctx.createLinearGradient(paddleX, SCREEN_H-80, paddleX, SCREEN_H-80+paddleH);
+            pGrad.addColorStop(0, '#00f5ff');
+            pGrad.addColorStop(1, '#006688');
+            ctx.shadowColor = '#00f5ff';
+            ctx.shadowBlur = 18;
+            ctx.fillStyle = pGrad;
+            ctx.fillRect(paddleX, SCREEN_H - 80, paddleW, paddleH);
+            // highlight strip
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(255,255,255,0.22)';
+            ctx.fillRect(paddleX + 4, SCREEN_H - 80 + 2, paddleW - 8, 4);
+            // border
+            ctx.strokeStyle = 'rgba(0,245,255,0.6)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(paddleX + 0.5, SCREEN_H - 80 + 0.5, paddleW - 1, paddleH - 1);
+            ctx.shadowBlur = 0;
+
+            // ── BALLS ──
+            for (let ball of balls) {
+                ctx.shadowColor = '#ffffff';
+                ctx.shadowBlur = 20;
+                const bGrad = ctx.createRadialGradient(
+                    ball.x - ball.r*0.3, ball.y - ball.r*0.3, 0,
+                    ball.x, ball.y, ball.r
+                );
+                bGrad.addColorStop(0, '#ffffff');
+                bGrad.addColorStop(0.5, '#c0e8ff');
+                bGrad.addColorStop(1, 'rgba(100,200,255,0.4)');
+                ctx.fillStyle = bGrad;
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+            
+            // ── BRICKS ──
+            // Row-based hue cycling for visual depth
+            const rowColors = [
+                ['#ff2d78','#ff2d78'],
+                ['#ff6a00','#ff4400'],
+                ['#ffe600','#cc9900'],
+                ['#00ff88','#00bb55'],
+                ['#00f5ff','#0088aa'],
+                ['#bf00ff','#7700bb'],
+                ['#ff2d78','#aa0044'],
+                ['#ff6a00','#994400'],
+            ];
+
+            for (let b of bricks) {
+                if (!b.alive) continue;
+
+                // figure out row index
+                const rowIdx = Math.round((b.y - getBrickStartY()) / (brickH + 8));
+                const [c1, c2] = b.powerUp
+                    ? ['#ffe600', '#cc8800']
+                    : (rowColors[rowIdx % rowColors.length] || ['#ff2d78','#aa0044']);
+
+                const bGrad = ctx.createLinearGradient(b.x, b.y, b.x, b.y + b.h);
+                bGrad.addColorStop(0, c1 + 'dd');
+                bGrad.addColorStop(1, c2 + '88');
+
+                ctx.shadowColor = c1;
+                ctx.shadowBlur = b.powerUp ? 14 : 8;
+                ctx.fillStyle = bGrad;
+                ctx.fillRect(b.x, b.y, b.w, b.h);
+
+                // border
+                ctx.strokeStyle = c1 + '99';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
+
+                // top highlight
+                ctx.fillStyle = 'rgba(255,255,255,0.15)';
+                ctx.fillRect(b.x + 2, b.y + 2, b.w - 4, 5);
+
+                ctx.shadowBlur = 0;
+
+                if (b.powerUp) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+                    ctx.font = 'bold 14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('★', b.x + b.w/2, b.y + b.h/2 + 1);
+                }
+            }
+            
+            // ── POWER-UPS ──
+            for (let p of powerUps) {
+                const pu = POWERUP_TYPES.find(t => t.type === p.type);
+                if (!pu) continue;
+
+                ctx.shadowBlur = 22;
+                ctx.shadowColor = pu.color;
+
+                const puGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size/2);
+                puGrad.addColorStop(0, pu.color + 'ff');
+                puGrad.addColorStop(0.6, pu.color + 'aa');
+                puGrad.addColorStop(1, pu.color + '33');
+                ctx.fillStyle = puGrad;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // ring
+                ctx.strokeStyle = pu.color;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(pu.symbol, p.x, p.y + 1);
+            }
+            
+            // ── launch hint ──
+            if (balls.some(b => b.attached) && gameRunning) {
+                ctx.fillStyle = 'rgba(255,230,0,0.7)';
+                ctx.font = '13px "Press Start 2P"';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('SPACE = IZSTRELITEV', SCREEN_W/2, SCREEN_H - 118);
+            }
+        }
+        
+        function gameLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const delta = timestamp - lastTime;
+            lastTime = timestamp;
+            
+            update(delta);
+            draw();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function startGame() {
+            document.getElementById('menu').style.display = 'none';
+            pageTitle.style.display = 'block';
+            gameRunning = true;
+            paused = false;
+            level = 1;
+            score = 0;
+            lives = 3;
+            playTime = 0;
+            paddleW = 100;
+            paddleWidthTimer = 0;
+            paddleX = SCREEN_W / 2 - paddleW / 2;
+            
+            document.getElementById('score').textContent = '0';
+            document.getElementById('lives').textContent = '3';
+            document.getElementById('time').textContent = '00:00';
+            
+            createLevel(level);
+            resetBalls();
+            powerUps = [];
+        }
+        
+        function togglePause() {
+            paused = !paused;
+            document.getElementById('pause').style.display = paused ? 'flex' : 'none';
+        }
+        
+        function levelComplete() {
+            gameRunning = false;
+            document.getElementById('levelcomplete').style.display = 'flex';
+            document.getElementById('levelscore').innerHTML = `
+                Nivo ${level} dokončan!<br>
+                Točke: <strong>${score}</strong>
+            `;
+        }
+        
+        function nextLevel() {
+            document.getElementById('levelcomplete').style.display = 'none';
+            level++;
+            gameRunning = true;
+            paddleW = 100;
+            paddleWidthTimer = 0;
+            createLevel(level);
+            resetBalls();
+            powerUps = [];
+        }
+        
+        function gameOver() {
+            gameRunning = false;
+            saveHighScore();
+            document.getElementById('gameover').style.display = 'flex';
+            document.getElementById('finalscore').innerHTML = `
+                Končni rezultat: <strong>${score}</strong><br>
+                Nivo dosežen: ${level}
+            `;
+        }
+        
+        function restartGame() {
+            document.getElementById('gameover').style.display = 'none';
+            startGame();
+        }
+        
+        function showMenu() {
+            document.getElementById('gameover').style.display = 'none';
+            document.getElementById('menu').style.display = 'flex';
+            pageTitle.style.display = 'none';
+            gameRunning = false;
+        }
+        
+        // ====================== EVENTI ======================
+        window.addEventListener('keydown', e => {
+            keys[e.key] = true;
+            
+            if (e.key === ' ' && gameRunning) {
+                e.preventDefault();
+                launchBall();
+            }
+            
+            if (e.key.toLowerCase() === 'p' && gameRunning) {
+                e.preventDefault();
+                togglePause();
+            }
+            
+            if (e.key === 'Escape' && gameRunning) {
+                togglePause();
+            }
+        });
+        
+        window.addEventListener('keyup', e => {
+            keys[e.key] = false;
+        });
+        
+        // Touch podpora
+        let touchStartX = 0;
+        canvas.addEventListener('touchstart', e => {
+            if (!gameRunning) return;
+            touchStartX = e.changedTouches[0].screenX;
+        });
+        canvas.addEventListener('touchmove', e => {
+            if (!gameRunning || paused) return;
+            const touchX = e.changedTouches[0].screenX;
+            const diff = touchX - touchStartX;
+            paddleX += diff * 1.2;
+            touchStartX = touchX;
+            
+            if (paddleX < 0) paddleX = 0;
+            if (paddleX + paddleW > SCREEN_W) paddleX = SCREEN_W - paddleW;
+        });
+        
+        // Zaženi
+        window.onload = () => {
+            loadHighScores();
+            document.getElementById('menu').style.display = 'flex';
+            requestAnimationFrame(gameLoop);
+            console.log('%c🎮 The Bricks z POWER-UPI + akceleracijo žoge (0.1) naložen!', 'color:#ff0; font-size:16px');
+        };
+    </script>
+</body>
+</html>
