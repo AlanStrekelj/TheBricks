@@ -11,7 +11,7 @@
     <title>The Bricks</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Press+Start+2P&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-	<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+	<link rel="icon" type="image/svg+xml" href="favicon.svg">
     <style>
         :root {
             --ink: #13233b;
@@ -451,7 +451,6 @@
         </div>
     </div>
 
-    <!-- MENU -->
     <div id="menu">
         <div class="overlay-title">THE BRICKS</div>
         <div class="overlay-sub">Klasična 'The Bricks' igra z bonusi</div>
@@ -469,14 +468,12 @@
         </div>
     </div>
 
-    <!-- PAUZA -->
     <div id="pause">
         <div class="panel-title yellow">PAUZA</div>
         <div class="panel-body">Igra je ustavljena</div>
         <button onclick="togglePause()">▶ &nbsp;NADALJUJ</button>
     </div>
 
-    <!-- KONEC IGRE -->
     <div id="gameover">
         <div class="panel-title red">GAME OVER</div>
         <div class="panel-body" id="finalscore"></div>
@@ -484,7 +481,6 @@
         <button class="btn-alt" onclick="showMenu()">↩ &nbsp;MENI</button>
     </div>
 
-    <!-- NIVO DOKONČAN -->
     <div id="levelcomplete">
         <div class="panel-title green">NIVO DOKONČAN!</div>
         <div class="panel-body" id="levelscore"></div>
@@ -493,7 +489,6 @@
 </div>
 
     <script>
-        // ====================== THE BRICKS + POWER-UPI + AKCELERACIJA ŽOGE ======================
         const canvas = document.getElementById('game');
         const ctx = canvas.getContext('2d');
         const ui = document.getElementById('ui');
@@ -504,14 +499,12 @@
         const BRICK_SIDE_MARGIN = 5;
         const BRICK_MARGIN_TOP = 18;
         
-        // Konstante
         let paddleW = 100;
         let paddleH = 15;
         let ballR = 10;
         let brickW = 70;
         let brickH = 25;
         
-        // Igra spremenljivke
         let paddleX = SCREEN_W / 2 - paddleW / 2;
         let balls = [];
         let bricks = [];
@@ -528,10 +521,8 @@
         let paddleWidthTimer = 0;
         let highScores = [];
         
-        // Tipke
         let keys = {};
         
-        // POWER-UP tipi
         const POWERUP_TYPES = [
             { type: 'life', color: '#00ff00', symbol: '❤️', name: 'ŽIVLJENJE' },
             { type: 'big',  color: '#0066ff', symbol: '🔺', name: 'VELIKA PLOŠČA' },
@@ -682,7 +673,6 @@
             
             playTime += delta;
             
-            // loputa
             const speed = 10;
             if (keys['ArrowLeft'] || keys['a'] || keys['A']) paddleX -= speed;
             if (keys['ArrowRight'] || keys['d'] || keys['D']) paddleX += speed;
@@ -690,7 +680,6 @@
             if (paddleX < 0) paddleX = 0;
             if (paddleX + paddleW > SCREEN_W) paddleX = SCREEN_W - paddleW;
             
-            // BIG paddle timer
             if (paddleWidthTimer > 0) {
                 paddleWidthTimer -= delta;
                 if (paddleWidthTimer <= 0) {
@@ -700,8 +689,7 @@
 
             const topBounceLine = getUiBounceLine();
             
-            // ŽOGE
-			const acceleration=0.006
+			const acceleration=0.007
             for (let i = balls.length - 1; i >= 0; i--) {
                 const ball = balls[i];
                 
@@ -712,14 +700,12 @@
                     ball.x += ball.dx;
                     ball.y += ball.dy;
                     
-                    // odbiti od sten
                     if (ball.x - ball.r < 0 || ball.x + ball.r > SCREEN_W) ball.dx = -ball.dx;
                     if (ball.y - ball.r < topBounceLine) {
                         ball.y = topBounceLine + ball.r;
                         ball.dy = Math.abs(ball.dy);
                     }
                     
-                    // odbiti od lopute
                     if (ball.dy > 0 &&
                         ball.y + ball.r > SCREEN_H - 80 &&
                         ball.y + ball.r < SCREEN_H - 80 + paddleH + 12 &&
@@ -730,13 +716,11 @@
                         ball.dx = offset * 6.8;
                     }
                     
-                    // padec dol
                     if (ball.y > SCREEN_H + 50) {
                         balls.splice(i, 1);
                         continue;
                     }
                     
-                    // kolizija z opekami
                     for (let j = bricks.length - 1; j >= 0; j--) {
                         const b = bricks[j];
                         if (!b.alive) continue;
@@ -748,10 +732,8 @@
                             score += b.points;
                             document.getElementById('score').textContent = score;
                             
-                            // odbiti žogo
                             ball.dy = -ball.dy;
                             
-                            // POWER-UP drop
                             if (b.powerUp) {
                                 powerUps.push({
                                     x: b.x + b.w / 2,
@@ -766,7 +748,6 @@
                         }
                     }
                     
-                    // === AKCELERACIJA ŽOGE (0.1 na frame) ===
                     const currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
                     if (currentSpeed > 0) {
                         const newSpeed = currentSpeed + acceleration;
@@ -777,7 +758,6 @@
                 }
             }
             
-            // če ni več žog → izgubi življenje
             if (balls.length === 0) {
                 lives--;
                 document.getElementById('lives').textContent = lives;
@@ -788,7 +768,6 @@
                 }
             }
             
-            // POWER-UPI padajo
             for (let i = powerUps.length - 1; i >= 0; i--) {
                 const p = powerUps[i];
                 p.y += p.dy;
@@ -798,7 +777,6 @@
                     continue;
                 }
                 
-                // ulov z loputo
                 if (p.y + p.size / 2 > SCREEN_H - 80 &&
                     p.y - p.size / 2 < SCREEN_H - 80 + paddleH &&
                     p.x > paddleX && p.x < paddleX + paddleW) {
@@ -808,13 +786,11 @@
                 }
             }
             
-            // preveri konec nivoja
             const aliveBricks = bricks.filter(b => b.alive);
             if (aliveBricks.length === 0) {
                 levelComplete();
             }
             
-            // UI čas
             const totalSec = Math.floor(playTime / 1000);
             const min = String(Math.floor(totalSec / 60)).padStart(2, '0');
             const sec = String(totalSec % 60).padStart(2, '0');
@@ -823,11 +799,9 @@
         }
         
         function draw() {
-            // background
             ctx.fillStyle = '#03040a';
             ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
 
-            // subtle grid
             ctx.strokeStyle = 'rgba(0,245,255,0.04)';
             ctx.lineWidth = 1;
             for (let x = 0; x < SCREEN_W; x += 40) {
@@ -837,7 +811,6 @@
                 ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(SCREEN_W, y); ctx.stroke();
             }
 
-            // bottom floor line
             ctx.strokeStyle = 'rgba(0,245,255,0.12)';
             ctx.lineWidth = 1;
             ctx.beginPath();
@@ -845,7 +818,6 @@
             ctx.lineTo(SCREEN_W, SCREEN_H - 100);
             ctx.stroke();
 
-            // ── PADDLE ──
             const pGrad = ctx.createLinearGradient(paddleX, SCREEN_H-80, paddleX, SCREEN_H-80+paddleH);
             pGrad.addColorStop(0, '#00f5ff');
             pGrad.addColorStop(1, '#006688');
@@ -853,17 +825,14 @@
             ctx.shadowBlur = 18;
             ctx.fillStyle = pGrad;
             ctx.fillRect(paddleX, SCREEN_H - 80, paddleW, paddleH);
-            // highlight strip
             ctx.shadowBlur = 0;
             ctx.fillStyle = 'rgba(255,255,255,0.22)';
             ctx.fillRect(paddleX + 4, SCREEN_H - 80 + 2, paddleW - 8, 4);
-            // border
             ctx.strokeStyle = 'rgba(0,245,255,0.6)';
             ctx.lineWidth = 1;
             ctx.strokeRect(paddleX + 0.5, SCREEN_H - 80 + 0.5, paddleW - 1, paddleH - 1);
             ctx.shadowBlur = 0;
 
-            // ── BALLS ──
             for (let ball of balls) {
                 ctx.shadowColor = '#ffffff';
                 ctx.shadowBlur = 20;
@@ -881,8 +850,6 @@
                 ctx.shadowBlur = 0;
             }
             
-            // ── BRICKS ──
-            // Row-based hue cycling for visual depth
             const rowColors = [
                 ['#ff2d78','#ff2d78'],
                 ['#ff6a00','#ff4400'],
@@ -897,7 +864,6 @@
             for (let b of bricks) {
                 if (!b.alive) continue;
 
-                // figure out row index
                 const rowIdx = Math.round((b.y - getBrickStartY()) / (brickH + 8));
                 const [c1, c2] = b.powerUp
                     ? ['#ffe600', '#cc8800']
@@ -912,12 +878,10 @@
                 ctx.fillStyle = bGrad;
                 ctx.fillRect(b.x, b.y, b.w, b.h);
 
-                // border
                 ctx.strokeStyle = c1 + '99';
                 ctx.lineWidth = 1;
                 ctx.strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
 
-                // top highlight
                 ctx.fillStyle = 'rgba(255,255,255,0.15)';
                 ctx.fillRect(b.x + 2, b.y + 2, b.w - 4, 5);
 
@@ -932,7 +896,6 @@
                 }
             }
             
-            // ── POWER-UPS ──
             for (let p of powerUps) {
                 const pu = POWERUP_TYPES.find(t => t.type === p.type);
                 if (!pu) continue;
@@ -949,7 +912,6 @@
                 ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
                 ctx.fill();
 
-                // ring
                 ctx.strokeStyle = pu.color;
                 ctx.lineWidth = 1.5;
                 ctx.beginPath();
@@ -964,7 +926,6 @@
                 ctx.fillText(pu.symbol, p.x, p.y + 1);
             }
             
-            // ── launch hint ──
             if (balls.some(b => b.attached) && gameRunning) {
                 ctx.fillStyle = 'rgba(255,230,0,0.7)';
                 ctx.font = '13px "Press Start 2P"';
@@ -1054,7 +1015,6 @@
             gameRunning = false;
         }
         
-        // ====================== EVENTI ======================
         window.addEventListener('keydown', e => {
             keys[e.key] = true;
             
@@ -1077,7 +1037,6 @@
             keys[e.key] = false;
         });
         
-        // Touch podpora
         let touchStartX = 0;
         canvas.addEventListener('touchstart', e => {
             if (!gameRunning) return;
@@ -1094,7 +1053,6 @@
             if (paddleX + paddleW > SCREEN_W) paddleX = SCREEN_W - paddleW;
         });
         
-        // Zaženi
         window.onload = () => {
             loadHighScores();
             document.getElementById('menu').style.display = 'flex';
